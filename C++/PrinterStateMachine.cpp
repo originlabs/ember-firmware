@@ -40,7 +40,8 @@ PrinterStateMachine::PrinterStateMachine(PrintEngine* pPrintEngine) :
 _isProcessing(false),
 _homingSubState(NoUISubState),
 _remainingUnjamTries(0),
-_motionCompleted(false)
+_motionCompleted(false),
+_skipHomingRotation(false)
 {
     _pPrintEngine = pPrintEngine;
 }
@@ -150,8 +151,11 @@ AwaitingCancelation::~AwaitingCancelation()
 
 sc::result AwaitingCancelation::react(const EvMotionCompleted&)
 {
-    context<PrinterStateMachine>().SendMotorCommand(GoHome);
-    
+    if (context<PrinterStateMachine>()._skipHomingRotation)
+        context<PrinterStateMachine>().SendMotorCommand(GoHomeWithoutRotateHome);
+    else 
+        context<PrinterStateMachine>().SendMotorCommand(GoHome);
+
     return transit<Homing>();
 }
 
@@ -175,6 +179,14 @@ sc::result ShowingVersion::react(const EvReset&)
 {
     PRINTENGINE->ClearCurrentPrint();  // probably not necessary, but can't hurt
     return transit<Initializing>();
+}
+
+sc::result ShowingVersion::react(const EvLeftButton&)
+{
+    if(PRINTENGINE->CanUpgradeProjector())
+        return transit<ConfirmUpgrade>(); 
+    else
+        return discard_event();  
 }
 
 DoorClosed::DoorClosed(my_context ctx) : my_base(ctx)
@@ -252,7 +264,7 @@ DoorOpen::~DoorOpen()
 sc::result DoorOpen::react(const EvDoorClosed&)
 {
     // arrange to clear the screen first
-    PRINTENGINE->SendStatus(DoorOpenState, NoChange, ExitingDoorOpen); 
+    PRINTENGINE->SendStatus(DoorOpenState, NoChange, ClearingScreen); 
     
     return transit<sc::deep_history<Initializing> >();
 }
@@ -454,6 +466,8 @@ Home::~Home()
 
 sc::result Home::TryStartPrint()
 {
+    context<PrinterStateMachine>()._skipHomingRotation = false;
+    
     if (PRINTENGINE->TryStartPrint())
     {
         // send the move to start position command to the motor controller
@@ -759,6 +773,9 @@ InitializingLayer::InitializingLayer(my_context ctx) : my_base(ctx)
         // immediately transition to the next state)
         PRINTENGINE->NextLayer();
         post_event(EvInitialized());
+        
+        // rotation homing not wanted on cancellation (till end of Exposing) 
+        context<PrinterStateMachine>()._skipHomingRotation = true;
     }
     
     UISubState uiSubState = PRINTENGINE->PauseRequested() ? AboutToPause : 
@@ -954,6 +971,9 @@ sc::result Exposing::react(const EvExposed&)
     
     // send the separation command to the motor controller
     context<PrinterStateMachine>().SendMotorCommand(Separate);
+    
+    // rotation homing now needed on cancellation
+    context<PrinterStateMachine>()._skipHomingRotation = false;
 
     return transit<Separating>();
 }
@@ -1100,5 +1120,89 @@ DemoMode::~DemoMode()
 {
     PRINTENGINE->SendStatus(DemoModeState, Leaving);
 }
+
+ConfirmUpgrade::ConfirmUpgrade(my_context ctx) : my_base(ctx)
+{
+    PRINTENGINE->SendStatus(ConfirmUpgradeState, Entering);
+}
+
+ConfirmUpgrade::~ConfirmUpgrade()
+{
+    PRINTENGINE->SendStatus(ConfirmUpgradeState, Leaving);
+}
+
+sc::result ConfirmUpgrade::react(const EvRightButton&)
+{
+    // clear the screen 
+    PRINTENGINE->SendStatus(ConfirmUpgradeState, NoChange, ClearingScreen);
+    // and start the upgrade process
+    return transit<UpgradingProjector>();    
+}
+
+sc::result ConfirmUpgrade::react(const EvCancel&)
+{
+    return transit<ShowingVersion>();
+}
+
+sc::result ConfirmUpgrade::react(const EvReset&)
+{
+    PRINTENGINE->ClearCurrentPrint();  // probably not necessary, but can't hurt
+    return transit<Initializing>();
+}
+
+sc::result ConfirmUpgrade::react(const EvLeftButton&)
+{
+    post_event(EvCancel());
+    return discard_event();   
+}
+
+UpgradingProjector::UpgradingProjector(my_context ctx) : my_base(ctx)
+{
+    PRINTENGINE->SendStatus(UpgradingProjectorState, Entering);
+    PRINTENGINE->PutProjectorInProgramMode(true);
+}
+
+UpgradingProjector::~UpgradingProjector()
+{
+    PRINTENGINE->SendStatus(UpgradingProjectorState, Leaving);
+    // the following doesn't actually work to get us out of Program Mode
+    PRINTENGINE->PutProjectorInProgramMode(false);
+}
+
+sc::result UpgradingProjector::react(const EvDelayEnded&)
+{
+    // do actual re-programming of projector firmware
+    PRINTENGINE->UpgradeProjectorFirmware();
+    if(!PRINTENGINE->ProjectorProgrammingCompleted())
+    {
+        // minimal delay, to allow progress update, which itself takes 300 ms
+        PRINTENGINE->StartDelayTimer(0.001);
+        // send status, to update progress indicator
+        PRINTENGINE->SendStatus(UpgradingProjectorState, NoChange);
+    }
+    return discard_event();
+}
+
+sc::result UpgradingProjector::react(const EvUpgadeCompleted&)
+{
+    // all done
+    return transit<UpgradeComplete>();
+}
+
+sc::result UpgradingProjector::react(const EvError&)
+{
+    return transit<Error>();
+}
+
+UpgradeComplete::UpgradeComplete(my_context ctx) : my_base(ctx)
+{
+    PRINTENGINE->SendStatus(UpgradeCompleteState, Entering);
+}
+
+UpgradeComplete::~UpgradeComplete()
+{
+    PRINTENGINE->SendStatus(UpgradeCompleteState, Leaving);
+} 
+
 
 #undef PRINTENGINE

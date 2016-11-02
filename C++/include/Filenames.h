@@ -27,7 +27,6 @@
 
 #include <Shared.h>
 
-constexpr const char* CAPE_MANAGER_SLOTS_FILE = "/sys/devices/platform/bone_capemgr/slots";
 constexpr const char* BOARD_SERIAL_NUM_FILE   = "/sys/bus/nvmem/devices/at24-0/nvmem";
 constexpr const char* THERMOMETER_FILE        = "/mnt/1wire/22.*/temperature";
 constexpr const char* GPIO_VALUE              = "/sys/class/gpio/gpio%d/value";
@@ -43,6 +42,7 @@ constexpr const char* FILE_FILTER_PREFIX       = "/*.";
 
 constexpr const char* PRINT_FILE_FILTER_TARGZ = "/*.tar.gz";
 constexpr const char* PRINT_FILE_FILTER_ZIP   = "/*.zip";
+constexpr const char* PRINT_FILE_FILTER_ANY   = "/*";
 
 constexpr const char* TEST_PATTERN_FILE = "/TestPattern.png";
 constexpr const char* CAL_IMAGE_FILE    = "/Calibration.png";
@@ -55,5 +55,10 @@ constexpr const char* USB_DRIVE_MOUNT_POINT = "/mnt/usb";
 // name of file or directory in print data directory containing currently loaded
 // print data
 constexpr const char* PRINT_DATA_NAME = "print";
+
+constexpr const char* PROJECTOR_FW_FILE = "/lib/projector/Autodesk_3_0_no_images.bin";
+
+constexpr const char* DRM_DEVICE_NODE = "/dev/dri/card0";
+constexpr const char* MEMORY_DEVICE = "/dev/mem";
 
 #endif    // FILENAMES_H

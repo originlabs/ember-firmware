@@ -55,14 +55,25 @@ void Logger::Callback(EventType eventType, const EventData& data)
         case PrinterStatusUpdate:
             ps = data.Get<PrinterStatus>();
             // only log state entering and leaving
-            if (ps._change == Entering ||
-               ps._change == Leaving)
+            if (ps._change == Entering || ps._change == Leaving)
             {
-                const char* substate = (ps._UISubState == NoUISubState) ?
-                       "" : PrinterStatus::GetSubStateName(ps._UISubState);
-                syslog(priority, LOG_STATUS_FORMAT, 
-                       ps._change == Entering ? ENTERING : LEAVING,
-                       PrinterStatus::GetStateName(ps._state), substate);
+                if(ps._state != ExposingState || ps._change != Entering)
+                {
+                    const char* substate = (ps._UISubState == NoUISubState) ?
+                           "" : PrinterStatus::GetSubStateName(ps._UISubState);
+                    syslog(priority, LOG_STATUS_FORMAT, 
+                           ps._change == Entering ? ENTERING : LEAVING,
+                           PrinterStatus::GetStateName(ps._state), substate);
+                }
+                else
+                {
+                    // log extra info when starting each exposure
+                    syslog(priority, LOG_EXPOSING_FORMAT, 
+                           ps._change == Entering ? ENTERING : LEAVING,
+                           PrinterStatus::GetStateName(ps._state), 
+                            ps._currentLayer, ps._numLayers,
+                            ps._estimatedSecondsRemaining);
+                }
             }
             break;
             
@@ -101,6 +112,16 @@ char* Logger::LogError(int priority, int errnum, const char* msg)
     syslog(priority, LOG_ERROR_FORMAT, msg, strerror(errnum));
     sprintf(buf, ERROR_FORMAT, msg, strerror(errnum));
     std::cerr << buf << std::endl;
+    return buf;
+}
+
+// Log the given error message and send it out to stderr.
+char* Logger::LogError(int priority, ErrorCode errorCode)
+{
+    const char* message = ErrorMessage::GetMessage(errorCode);
+    syslog(priority, message);
+    std::cerr << message << std::endl;
+    std::strcpy(buf, message);
     return buf;
 }
 

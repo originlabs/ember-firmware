@@ -23,6 +23,7 @@ include_directories(
     tests
     ${ImageMagick_INCLUDE_DIRS}
     ${ZLIB_INCLUDE_DIRS}
+    /usr/include/libdrm
 )
 
 # Specify hardware independent source files here
@@ -59,29 +60,33 @@ add_library(Core STATIC
     Timer.cpp
     UdevMonitor.cpp
     utils.cpp
-   
-    I2C_Device.cpp
-    GPIO_Interrupt.cpp
 )
 
 # Specify library dependencies here
 set(LIBRARIES
-    Core 
     pthread
     zpp
     iw
     udev
     tar
-    SDL
-    SDL_image
     ${ImageMagick_LIBRARIES}
     ${ZLIB_LIBRARIES}
+    drm
 )
 
 # Specify hardware dependent source files here
 add_library(Hardware STATIC EXCLUDE_FROM_ALL
+    DRM_Connector.cpp 
+    DRM_Device.cpp
+    DRM_DumbBuffer.cpp
+    DRM_Encoder.cpp
+    DRM_FrameBuffer.cpp
+    DRM_Resources.cpp
     FrameBuffer.cpp 
+    GPIO_Interrupt.cpp
     HardwareFactory.cpp
+    I2C_Device.cpp
+    GPIO.cpp
 )
 
 # Specify mock hardware source file here
@@ -118,11 +123,13 @@ set(USE_MOCK_HARDWARE FALSE CACHE BOOL "Enable to build with mock hardware")
 
 if (${USE_MOCK_HARDWARE})
     message(STATUS "Configured to build with mock hardware")
-    list(APPEND LIBRARIES MockHardware)
+    list(INSERT LIBRARIES 0 MockHardware)
 else()
     message(STATUS "Configured to build with actual hardware")
-    list(APPEND LIBRARIES Hardware)
+    list(INSERT LIBRARIES 0 Hardware)
 endif()
+
+list(INSERT LIBRARIES 0 Core)
 
 target_link_libraries(smith ${LIBRARIES})
 install(TARGETS smith RUNTIME DESTINATION /usr/local/bin)
@@ -143,4 +150,4 @@ add_nb_test(f9 tests/PE_PD_IT.cpp)
 add_nb_test(f10 tests/PrintEngineUT.cpp)
 add_nb_test(f11 tests/ScreenUT.cpp)
 add_nb_test(f12 tests/SettingsUT.cpp)
-#add_nb_test(f13 tests/ImageProcessorUT.cpp)
+add_nb_test(f13 tests/ImageProcessorUT.cpp)

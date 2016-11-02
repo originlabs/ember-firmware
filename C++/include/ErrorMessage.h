@@ -79,9 +79,9 @@ enum ErrorCode
     HardwareNeeded = 41,
     UnknownCommandInput = 42,
     RemainingExposure = 43,
-    SdlInit = 44,
-    SdlSetMode = 45,
-    SdlHideCursor = 46,
+    SdlInit = 44,       // no longer used
+    SdlSetMode = 45,    // no longer used
+    SdlHideCursor = 46, // no longer used
     LoadImageError = 47,
     NoImageForLayer = 48,
     CantShowImage = 49,
@@ -114,7 +114,7 @@ enum ErrorCode
     TemperatureTimerError = 76,
     OverHeated = 77,
     CantOpenThermometer = 78,
-    CantOpenCapeManager = 79,
+    CantOpenCapeManager = 79,   // no longer used
     MotorSettingError = 80,     // no longer used
     WrongTypeForSetting = 81,
     SaveStatusToFileError = 82,
@@ -147,20 +147,53 @@ enum ErrorCode
     UdevGetFileDescriptor = 109,
     UsbDriveMount = 110,
     EventfdCreate = 111,
-    SdlCreateSurface = 112,
+    SdlCreateSurface = 112, // no longer used
     IPThreadAlreadyRunning = 113,
     CantStartIPThread = 114,
     CantJoinIPThread = 115,
     ImageProcessing = 116,
     CantShowWhite = 117,
-    SdlLockSurface = 118,
-    SdlFillRect = 119,
-    SdlFlip = 120,
-    SdlBlitSurface = 121,
+    SdlLockSurface = 118, // no longer used
+    SdlFillRect = 119,    // no longer used
+    SdlFlip = 120,        // no longer used
+    SdlBlitSurface = 121, // no longer used
     I2cReadReadWhenReady = 122,
     I2cDeviceNotReady = 123,
     ProjectorGammaError = 124,
-   
+    PatternModeError = 125,
+    ProjectorUpgradeError = 126,
+    CantReadProjectorFwVersion = 127, 
+    CantReadProjectorMfrID = 128,  
+    UnknownProjectorMfrID = 129,   
+    CantReadProjectorDeviceID = 130, 
+    UnknownProjectorDeviceID = 131, 
+    CantOpenProjectorFwFile = 132,
+    UnexpectedChecksum = 133,
+    CantEraseProjectorSector = 134,
+    CantValidatePatternSequence = 135,
+    BadProjectorHWStatus = 136,
+    BadProjectorSystemStatus = 137,
+    BadProjectorMainStatus = 138,
+    VideoModeError = 139,
+    DrmCantOpenDevice = 140,
+    DrmCantGetResources = 141,
+    DrmConnectorIndexOutOfBounds = 142,
+    DrmCantRetrieveConnector = 143,
+    DrmModeNotAvailable = 144,
+    DrmCantRetrieveEncoder = 145,
+    DrmNoDumbBufferSupport = 146,
+    DrmCantCreateDumbBuffer = 147,
+    DrmCantCreateFrameBuffer = 148,
+    DrmConnectorNotConnected = 149,
+    DrmCantSetCrtc = 150,
+    DrmCantPrepareDumbBuffer = 151,
+    DrmCantMapDumbBuffer = 152,
+    DrmCantGetCapability = 153,
+    CantOpenMemoryDevice = 154,
+    CantMapPriorityRegister = 155,
+    CantUnMapPriorityRegister = 156,
+    BadPerLayerSettings = 157,
+    GpioOutput = 158,
 
     // Guardrail for valid error codes
     MaxErrorCode
@@ -190,6 +223,7 @@ public:
             messages[GpioEdge] = "Unable to open edge handle for %d";
             messages[GpioInterrupt] = "Unable to create interrupt %d";
             messages[GpioInput] = "Unable to open input for %d";
+            messages[GpioOutput] = "Unable to open output for %d";  
             messages[FileDescriptorInUse] = "File descriptor for %d already defined";
             messages[NoFileDescriptor] = "No file descriptor defined for subscription to event type %d";
             messages[EpollCreate] = "Couldn't create the epoll set";
@@ -225,10 +259,6 @@ public:
             messages[HardwareNeeded] = "Release build must have hardware!";
             messages[UnknownCommandInput] = "Unknown command input: %d";
             messages[RemainingExposure] = "Error reading remaining exposure time";
-            messages[SdlInit] = "Could not initialize screen, SDL error: %s";
-            messages[SdlSetMode] = "Could not set video mode, SDL error: %s";
-            messages[SdlHideCursor] = "Could not hide cursor, SDL error: %s"; 
-            messages[SdlCreateSurface] = "Could not create surface, SDL error: %s"; 
             messages[LoadImageError] = "Error loading image: %s";
             messages[NoImageForLayer] = "No image for layer %d";
             messages[CantShowImage] = "Can't show image for layer %d";
@@ -259,7 +289,6 @@ public:
             messages[CantLoadSettingsFile] = "Can't load settings file: %s";
             messages[OverHeated] = "Printer temperature (%sC) is too high";
             messages[CantOpenThermometer] = "Can't find temperature sensor file";
-            messages[CantOpenCapeManager] = "Can't open cape manager slots file: %s";
             messages[MotorSettingError] = "Error sending motor setting";
             messages[WrongTypeForSetting] = "Incorrect type for setting named: %s";
             messages[SaveStatusToFileError] = "Unable to save printer status to file";
@@ -294,14 +323,43 @@ public:
             messages[CantJoinIPThread] = "Unable to join the image processing thread",                  
             messages[ImageProcessing] = "Error processing image: %s",
             messages[CantShowWhite] = "Can't clear the screen to white: %s";
-            messages[SdlLockSurface] = "Could not lock SDL surface, SDL error: %s";
-            messages[SdlFillRect] = "Could not fill SDL surface, SDL error: %s";
-            messages[SdlFlip] = "Could not flip SDL surface, SDL error: %s";
-            messages[SdlBlitSurface] = "Could not blit SDL surface, SDL error: %s";
             messages[I2cReadReadWhenReady] = "Read error in I2C_Device::ReadWhenReady";
             messages[I2cDeviceNotReady] = "I2C_Device not ready for reading";
             messages[ProjectorGammaError] = "Could not disable projector's gamma correction";
-                   
+            messages[PatternModeError] = "Could not set pattern mode";
+            messages[VideoModeError] = "Could not set video mode";
+            messages[ProjectorUpgradeError] = "Could not upgrade projector firmware";
+            messages[CantReadProjectorFwVersion] = "Could not read projector firmware version";
+            messages[CantReadProjectorMfrID] = "Could not read projector manufacturer ID";
+            messages[UnknownProjectorMfrID] = "Unknown projector manufacturer ID: 0x%X";
+            messages[CantReadProjectorDeviceID] = "Could not read projector device ID";
+            messages[UnknownProjectorDeviceID] = "Unknown projector device ID: 0x%X";
+            messages[CantOpenProjectorFwFile] = "Could not open projector firmware file: %s";
+            messages[UnexpectedChecksum] = "Unexpected checksum: 0x%X";
+            messages[CantEraseProjectorSector] = "Could not erase projector sector at 0x%X";
+            messages[CantValidatePatternSequence] = "Could not validate pattern sequence";
+            messages[BadProjectorHWStatus] = "Invalid projector hardware status: 0x%X";
+            messages[BadProjectorSystemStatus] = "Invalid projector system status: 0x%X";
+            messages[BadProjectorMainStatus] = "Invalid projector main status: 0x%X";
+            messages[DrmCantOpenDevice] = "Could not open DRM graphics device";
+            messages[DrmCantGetResources] = "Could not retrieve DRM resources";
+            messages[DrmConnectorIndexOutOfBounds] = "Specified DRM connector index out of bounds";
+            messages[DrmCantRetrieveConnector] = "Could not retrieve DRM connector";
+            messages[DrmModeNotAvailable] = "Requested DRM mode not available";
+            messages[DrmCantRetrieveEncoder] = "Could not retrieve DRM encoder";
+            messages[DrmNoDumbBufferSupport] = "DRM device does not support dumb buffers";
+            messages[DrmCantCreateDumbBuffer] = "Could not create DRM dumb buffer";
+            messages[DrmCantCreateFrameBuffer] = "Could not create DRM frame buffer";
+            messages[DrmConnectorNotConnected] = "DRM connector not connected to display";
+            messages[DrmCantSetCrtc] = "Could not set DRM CRTC mode";
+            messages[DrmCantPrepareDumbBuffer] = "Could not prepare DRM dumb buffer for mapping";
+            messages[DrmCantMapDumbBuffer] = "Could not memory map DRM dumb buffer";
+            messages[DrmCantGetCapability] = "Could not get DRM device capability";
+            messages[CantOpenMemoryDevice] = "Could not open memory device to prevent video flicker";
+            messages[CantMapPriorityRegister] = "Could not map priority register to prevent video flicker";
+            messages[CantUnMapPriorityRegister] = "Could not un-map priority register to prevent video flicker";
+            messages[BadPerLayerSettings] = "Invalid per-layer settings file";
+                    
             messages[UnknownErrorCode] = "Unknown error code: %d";
             initialized = true;
         }
@@ -334,38 +392,68 @@ public:
                 messages[ec] = {""};
             }
                         
-            messages[GpioInput] = {"Door sensor"};
-            messages[MotorTimeoutTimer] = {"Motor timer"};
-            messages[ExposureTimer] = {"Exposure timer"};
-            messages[MotorTimeoutError] = {"Motor timeout"};
-            messages[MotorError] = {"Motion control"};
-            messages[MotorSettingError] = {"Motion control"};
-            messages[UnexpectedMotionEnd] = {"Motion control"};
-            messages[RemainingExposure] = {"Exposure control"};
-            messages[NoImageForLayer] = {"Missing layer image"};
-            messages[CantShowImage] = {"Image projection"};
-            messages[CantShowBlack] = {"Image clearing"};
-            messages[CantShowWhite] = {"Image clearing"};
-            messages[CantGetSetting] = {"Access to setting"};
-            messages[CantLoadSettings] = {"Loading settings"};
-            messages[CantLoadSettingsFile] = {"Settings file load"};
-            messages[CantRestoreSettings] = {"Restoring settings"};
-            messages[CantRestorePrintSettings] = {"Restoring settings"};
-            messages[CantSaveSettings] = {"Saving settings"};
-            messages[CantReadSettingsString] = {"Reading settings"};
-            messages[NoDefaultSetting] = {"Default setting"};
-            messages[UnknownSetting] = {"Unknown setting",
-                                        "You may need a",
-                                        "firmware upgrade."};
-            messages[SettingOutOfRange] = {"Setting range"};
-            messages[WrongTypeForSetting] = {"Unknown setting"};
-            messages[OverHeated] = {"Too hot, turn off!"};
-            messages[NoValidPrintDataAvailable] = {"Invalid print data"};
-            messages[ImageProcessing] = {"Image processing"};
-            messages[ProjectorGammaError] = {"Projector needs",
-                                             "to be restarted.",
-                                             "Cycle power to fix."};
-             
+            messages[GpioInput] =                   {"Door sensor"};
+            messages[MotorTimeoutTimer] =           {"Can't set motor",
+                                                     "timeout timer."};
+            messages[ExposureTimer] =               {"Exposure timer"};
+            messages[MotorTimeoutError] =           {"Motor timeout"};
+            messages[MotorError] =                  {"Motion control"};
+            messages[MotorSettingError] =           {"Motion control"};
+            messages[UnexpectedMotionEnd] =         {"Motion control"};
+            messages[RemainingExposure] =           {"Can't read remaining",
+                                                     "exposure time."};
+            messages[NoImageForLayer] =             {"Missing image for",
+                                                     "print layer."};
+            messages[CantShowImage] =               {"Can't project print",
+                                                     "layer image."};
+            messages[CantShowBlack] =               {"Can't set projector",
+                                                     "to black."};
+            messages[CantShowWhite] =               {"Can't set projector",
+                                                     "to white"};
+            messages[CantGetSetting] =              {"Can't read setting"};
+            messages[CantLoadSettings] =            {"Can't load",
+                                                     "settings file."};
+            messages[CantLoadSettingsFile] =        {"Can't load settings",
+                                                     "from file."};
+            messages[CantRestoreSettings] =         {"Can't restore",
+                                                     "settings file."};
+            messages[CantRestorePrintSettings] =    {"Can't restore",
+                                                     "print settings."};
+            messages[CantSaveSettings] =            {"Can't save",
+                                                     "settings file."};
+            messages[CantReadSettingsString] =      {"Can't read",
+                                                     "settings text."};
+            messages[NoDefaultSetting] =            {"Default setting",
+                                                     "value is missing."};
+            messages[UnknownSetting] =              {"Unknown setting",
+                                                     "You may need a",
+                                                     "firmware upgrade."};
+            messages[SettingOutOfRange] =           {"Setting is",
+                                                     "out of range."};
+            messages[WrongTypeForSetting] =         {"Invalid setting",
+                                                     "found."};
+            messages[OverHeated] =                  {"Ember is overheated.",
+                                                     "Turn of and allow",
+                                                     "to cool down."};
+            messages[NoValidPrintDataAvailable] =   {"Invalid print data",
+                                                     "entered. Upload new",
+                                                     "print data."};
+            messages[ImageProcessing] =             {"Can't process print",
+                                                     "layer image."};
+            messages[ProjectorGammaError] =         {"Projector needs",
+                                                     "to be restarted.",
+                                                     "Cycle power to fix."};
+            messages[PatternModeError] =            {"Could not put",
+                                                     "projector into",
+                                                     "pattern mode."}; 
+            messages[VideoModeError] =              {"Could not put",
+                                                     "projector into",
+                                                     "video mode."};
+            messages[ProjectorUpgradeError] =       {"Could not",
+                                                     "upgrade projector."};
+            messages[BadPerLayerSettings] =         {"Invalid per-layer",
+                                                     "settings file."};
+                     
             initialized = true;
         }
 

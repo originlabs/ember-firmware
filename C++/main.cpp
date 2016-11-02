@@ -27,6 +27,7 @@
 #include <string>
 #include <utils.h>
 #include <fcntl.h>
+#include <sys/mman.h>
 #include <stdexcept>
 #include <Magick++.h>
 
@@ -48,6 +49,7 @@
 #include "Timer.h"
 #include "I2C_Resource.h"
 #include "GPIO_Interrupt.h"
+#include "GPIO.h"
 #include "Signals.h"
 #include "UdevMonitor.h"
 #include "I2C_Device.h"
@@ -59,14 +61,17 @@ using namespace std;
 // command line argument to suppress use of stdin & stdout
 constexpr const char* NO_STDIO = "--nostdio";
 
+// for setting DMA priority to avoid video flicker
+constexpr unsigned long MAP_SIZE = 4096UL;
+constexpr unsigned long MAP_MASK = (MAP_SIZE - 1);
+constexpr off_t REG_PR_OLD_COUNT = 0x4c000054;
+constexpr unsigned long PR_OLD_COUNT_VALUE = 0x00FFFFF10;
+
 int main(int argc, char** argv) 
 {
     try
     {
         // sets up signal handling
-        // must set up signal handling before constructing projector since SDL
-        // initialization somehow causes the process to receive SIGHUP, which
-        // by default causes termination
         Signals signals;
         
         Magick::InitializeMagick("");
@@ -91,26 +96,50 @@ int main(int argc, char** argv)
             cout << PRINTER_STARTUP_MSG << endl;
             cout << fwVersion << std::endl << serNum << std::endl;
         }
-           
-        // use cape manager to enable non-default I/O
-        int fd = open(CAPE_MANAGER_SLOTS_FILE, O_WRONLY); 
-        if (fd < 0)
+          
+        // turn on fans
+        GPIO fan1GPIO(FAN_1_PIN);
+        GPIO fan2GPIO(FAN_2_PIN);
+        GPIO fan3GPIO(FAN_3_PIN);
+
+        fan1GPIO.SetDirectionOut();
+        fan2GPIO.SetDirectionOut();
+        fan3GPIO.SetDirectionOut();
+
+        fan1GPIO.SetOutputHigh();
+        fan2GPIO.SetOutputHigh();
+        fan3GPIO.SetOutputHigh();
+        
+        // prevent video flickering by tweaking the value of REG_PR_OLD_COUNT
+        // see https://groups.google.com/forum/#!msg/beagleboard/GjxRGeLdmRw/dx-bOXBPBgAJ
+        // and http://www.lartmaker.nl/lartware/port/devmem2.c 
+        int fd = open(MEMORY_DEVICE, O_RDWR | O_SYNC);
+        if(fd < 0)
         {
-            Logger::LogError(LOG_ERR, errno, CantOpenCapeManager, 
-                                                    CAPE_MANAGER_SLOTS_FILE);
+            Logger::LogError(LOG_ERR, errno, CantOpenMemoryDevice);
             return 1;
         }
 
-        
-        std::string s[] = {"am33xx_pwm",    // enable PWM outputs to fans
-                           "bone_pwm_P8_19",   
-                           "bone_pwm_P9_16", 
-                           "bone_pwm_P8_13" };
+        // map one page 
+        void* mapBase = mmap(0, MAP_SIZE, PROT_READ | PROT_WRITE, MAP_SHARED, 
+                             fd, REG_PR_OLD_COUNT & ~MAP_MASK);
+        if(mapBase == MAP_FAILED)
+        {
+            Logger::LogError(LOG_ERR, errno,CantMapPriorityRegister);
+            return 1;
+        }
 
-        for(int i = 0; i < sizeof(s)/sizeof(std::string); i++)
-            write(fd, s[i].c_str(), s[i].size());
-        
-        close(fd);
+        void* addr = ((char*)mapBase) + (REG_PR_OLD_COUNT & MAP_MASK);
+
+        *((unsigned long *) addr) = PR_OLD_COUNT_VALUE;
+
+        if(munmap(mapBase, MAP_SIZE) < 0)
+        {
+            Logger::LogError(LOG_ERR, errno, CantUnMapPriorityRegister);
+            return 1;
+        }
+
+        close(fd);        
         
         Settings& settings = PrinterSettings::Instance();
         
@@ -159,8 +188,7 @@ int main(int argc, char** argv)
         // create the projector
         I2C_Device projectorI2cDevice(PROJECTOR_SLAVE_ADDRESS,
                 I2C0_PORT);
-        FrameBufferPtr pFrameBuffer = HardwareFactory::CreateFrameBuffer();
-        Projector projector(projectorI2cDevice, *pFrameBuffer);
+        Projector projector(projectorI2cDevice);
 
         EventHandler eh;
 

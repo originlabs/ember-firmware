@@ -42,6 +42,13 @@
 
 int mainReturnValue = EXIT_SUCCESS;
 
+// If the tests construct/destruct the FrameBuffer too quickly, the kernel(?)
+// doesn't get a chance to free the memory allocated for the dumb buffer
+// resulting in an out of memory error on the next FrameBuffer construction.
+// Adding delays between construction and destruction and between tests prevents
+// these errors.
+static int frameBufferDelaySeconds = 20;
+
 #define SETTINGS (PrinterSettings::Instance())
 
 class UIProxy : public ICallback
@@ -89,7 +96,6 @@ public:
     EventHandler eventHandler;
     NullI2C_Device nullI2cDevice;
     Motor motor;
-    FrameBuffer frameBuffer;
     Projector projector;
     PrinterStatusQueue printerStatusQueue;
     CommandPipe commandPipe;
@@ -108,8 +114,7 @@ public:
     eventHandler(),
     nullI2cDevice(),
     motor(nullI2cDevice),
-    frameBuffer(),
-    projector(nullI2cDevice, frameBuffer),
+    projector(nullI2cDevice),
     printerStatusQueue(),
     commandPipe(),
     timer1(),
@@ -131,6 +136,7 @@ public:
         eventHandler.Subscribe(UICommand, &commandInterpreter);
         eventHandler.Subscribe(PrinterStatusUpdate, &ui);
         printEngine.Begin();
+        sleep(frameBufferDelaySeconds);
     }
     
     void Setup()
@@ -441,6 +447,8 @@ int main(int argc, char** argv)
     }
     std::cout << "%TEST_FINISHED% time=0 TestProcessPrintDataWhenPrintFileIsTarGzWhenTempSettingsFileNotPresent (PE_PD_IT)" << std::endl;
 
+    sleep(frameBufferDelaySeconds);
+
     std::cout << "%TEST_STARTED% TestProcessPrintDataWhenTempSettingsFilePresent (PE_PD_IT)\n" << std::endl;
     {
         PE_PD_IT test;
@@ -449,6 +457,8 @@ int main(int argc, char** argv)
         test.TearDown();
     }
     std::cout << "%TEST_FINISHED% time=0 TestProcessPrintDataWhenTempSettingsFilePresent (PE_PD_IT)" << std::endl;
+    
+    sleep(frameBufferDelaySeconds);
 
     std::cout << "%TEST_STARTED% TestProcessPrintDataWhenPrintFileInvalid (PE_PD_IT)\n" << std::endl;
     {
@@ -458,6 +468,8 @@ int main(int argc, char** argv)
         test.TearDown();
     }
     std::cout << "%TEST_FINISHED% time=0 TestProcessPrintDataWhenPrintFileInvalid (PE_PD_IT)" << std::endl;
+    
+    sleep(frameBufferDelaySeconds);
 
     std::cout << "%TEST_STARTED% TestProcessPrintDataWhenTempSettingsFileInvalid (PE_PD_IT)\n" << std::endl;
     {
@@ -467,6 +479,8 @@ int main(int argc, char** argv)
         test.TearDown();
     }
     std::cout << "%TEST_FINISHED% time=0 TestProcessPrintDataWhenTempSettingsFileInvalid (PE_PD_IT)" << std::endl;
+    
+    sleep(frameBufferDelaySeconds);
  
     std::cout << "%TEST_STARTED% TestProcessPrintDataWhenPrintFileIsTarGzWhenSettingsFileNotPresent (PE_PD_IT)\n" << std::endl;
     {
@@ -477,6 +491,8 @@ int main(int argc, char** argv)
     }
     std::cout << "%TEST_FINISHED% time=0 TestProcessPrintDataWhenPrintFileIsTarGzWhenSettingsFileNotPresent (PE_PD_IT)" << std::endl;
     
+    sleep(frameBufferDelaySeconds);
+    
     std::cout << "%TEST_STARTED% TestProcessPrintDataWhenPrintFileIsZipWhenTempSettingsFileNotPresent (PE_PD_IT)\n" << std::endl;
     {
         PE_PD_IT test;
@@ -485,6 +501,8 @@ int main(int argc, char** argv)
         test.TearDown();
     }
     std::cout << "%TEST_FINISHED% time=0 TestProcessPrintDataWhenPrintFileIsZipWhenTempSettingsFileNotPresent (PE_PD_IT)" << std::endl;
+    
+    sleep(frameBufferDelaySeconds);
  
     std::cout << "%TEST_STARTED% TestProcessPrintDataWhenPrintFileIsZipWhenSettingsFileNotPresent (PE_PD_IT)\n" << std::endl;
     {
@@ -494,6 +512,8 @@ int main(int argc, char** argv)
         test.TearDown();
     }
     std::cout << "%TEST_FINISHED% time=0 TestProcessPrintDataWhenPrintFileIsZipWhenSettingsFileNotPresent (PE_PD_IT)" << std::endl;
+    
+    sleep(frameBufferDelaySeconds);
      
     std::cout << "%SUITE_FINISHED% time=0" << std::endl;
 
